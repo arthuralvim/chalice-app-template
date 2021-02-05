@@ -1,0 +1,146 @@
+name: chalice-deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      #----------------------------------------------
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install Poetry
+        uses: snok/install-poetry@v1.1.1
+        with:
+          version: 1.1.4
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-ansi
+      #----------------------------------------------
+      - name: Running Pre-Commit Checks
+        run: poetry run pre-commit run --from-ref origin/main --to-ref $(git rev-parse HEAD)
+      - name: Running Tests
+        run: make test
+
+  deploy-dev:
+    name: Deploy to Development
+    if: github.event_name == 'pull_request'
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: Development
+    steps:
+      - name: Deploy Finished
+        run: echo "Deploy finished at $(date +'%Y-%m-%dT%H:%M:%S')!"
+
+  deploy-staging:
+    name: Deploy to Staging
+    if: github.event.ref == 'refs/heads/main'
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: Staging
+      url: 'https://nhtrxbv2oe.execute-api.us-east-1.amazonaws.com/api/'
+    steps:
+      #----------------------------------------------
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install Poetry
+        uses: snok/install-poetry@v1.1.1
+        with:
+          version: 1.1.4
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-ansi
+      #----------------------------------------------
+      - name: Set Vault Password
+        run: echo "${{ secrets.PASSWORD_VAULT }}" > .password-file.vault
+      - name: Make requirements.txt
+        run: make requirements
+      - name: Deploy to AWS Lambda
+        run: make deploy
+        env:
+          APP_STAGE: dev
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_OUTPUT: ${{ secrets.AWS_DEFAULT_OUTPUT }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      - name: Deploy Finished
+        run: echo "Deploy finished at $(date +'%Y-%m-%dT%H:%M:%S')!"
+
+  deploy-prod:
+    name: Deploy to Production
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    environment:
+      name: Production
+      url: 'https://4n6035ss75.execute-api.us-east-1.amazonaws.com/api/'
+    steps:
+      #----------------------------------------------
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install Poetry
+        uses: snok/install-poetry@v1.1.1
+        with:
+          version: 1.1.4
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction  --no-ansi
+      #----------------------------------------------
+      - name: Publish New Release
+        run: |
+            git config user.email "actions@github.com"
+            git config user.name "Github Actions"
+            poetry run semantic-release publish -vDEBUG
+      - name: Set Vault Password
+        run: echo "${{ secrets.PASSWORD_VAULT }}" > .password-file.vault
+      - name: Make requirements.txt
+        run: make requirements
+      - name: Deploy to AWS Lambda
+        run: make deploy
+        env:
+          APP_STAGE: prod
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_OUTPUT: ${{ secrets.AWS_DEFAULT_OUTPUT }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      - name: Deploy Finished
+        run: echo "Deploy finished at $(date +'%Y-%m-%dT%H:%M:%S')!"

@@ -1,0 +1,17 @@
+[flake8]
+doctests = True
+format = abspath
+inline-quotes = double
+max-access-level = 6
+max-complexity = 7
+max-expressions = 12
+max-imports = 30
+max-line-length = 120
+max-local-variables = 8
+max-module-members = 10
+statistics = False
+exclude =
+    __init__.py,
+    vendor/*
+ignore =
+  I  # flake8-isort
