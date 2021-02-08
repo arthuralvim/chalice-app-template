@@ -127,3 +127,19 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# osx
+.DS_Store
+
+# chalice
+.chalice/deployments/
+.chalice/deployed/dev.json
+.chalice/deployed/prod.json
+.chalice/config.json
+.chalice/venv/
+tests/media/
+.env
+requirements.txt
+
+# ansible-vault
+.password-file.vault

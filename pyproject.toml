@@ -1,0 +1,72 @@
+[tool.black]
+line-length = 120
+target-version = ["py37", "py38"]
+
+[tool.coverage.report]
+omit = []
+show_missing = true
+skip_empty = true
+
+[tool.coverage.run]
+omit = ["tests/*", "vendor/*"]
+source = ["."]
+branch = true
+disable_warnings = ["no-data-collected"]
+
+[tool.pytest.ini_options]
+addopts = "--maxfail=3 -rfs"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test*"
+
+[tool.semantic_release]
+branch = "main"
+changelog_components = "semantic_release.changelog.changelog_headers"
+commit_author = "github-actions <actions@github.com>"
+commit_message = ""
+remove_dist = false
+upload_release = true
+upload_to_pypi = false
+version_pattern = 'pyproject.toml:version = "{version}"'
+version_source = "commit"
+
+[tool.poetry]
+name = "chalice-app-template"
+version = "0.1.0"
+description = ""
+authors = ["Arthur Alvim <eu@arthuralvim.com>"]
+
+[tool.poetry.dependencies]
+python = "3.7"
+chalice = "^1.22.1"
+python-decouple = "^3.4"
+python-json-logger = "^2.0.1"
+SQLAlchemy = "^1.3.23"
+pynubank = "^2.10.0"
+psycopg2-binary = "^2.8.6"
+Jinja2 = "^2.11.3"
+requests = "^2.25.1"
+
+[tool.poetry.dev-dependencies]
+ipdb = "^0.13.4"
+pre-commit = "^2.10.0"
+pytest = "^6.2.2"
+pytest-cov = "^2.11.1"
+python-semantic-release = "^7.13.2"
+reorder-python-imports = "^2.4.0"
+invoke = "^1.5.0"
+black = "^20.8b1"
+flake8 = "^3.8.4"
+mypy = "^0.800"
+factory-boy = "^3.2.0"
+pytest-sugar = "^0.9.4"
+pytest-mock = "^3.5.1"
+tox = "^3.21.4"
+requests-mock = "^1.8.0"
+moto = "^1.3.16"
+ansible-vault = "^2.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
