@@ -34,7 +34,7 @@ version_source = "commit"
 
 [tool.poetry]
 name = "chalice-app-template"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Arthur Alvim <eu@arthuralvim.com>"]
 
